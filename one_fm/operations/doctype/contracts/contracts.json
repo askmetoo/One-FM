@@ -52,12 +52,8 @@
   "frequency",
   "assets",
   "section_break_30",
-  "is_invoice_for_site",
+  "auto_invoice_based_on",
   "site_wise_option",
-  "is_seperate_invoice_for_site",
-  "is_invoice_for_full_amount",
-  "is_invoice_for_day_by_post",
-  "is_invoice_for_airport",
   "column_break_38",
   "is_attendance_for_invoice",
   "is_po_for_invoice",
@@ -224,12 +220,6 @@
   },
   {
    "default": "0",
-   "fieldname": "is_invoice_for_site",
-   "fieldtype": "Check",
-   "label": "Is Require Invoice For Each Site"
-  },
-  {
-   "default": "0",
    "fieldname": "is_po_for_invoice",
    "fieldtype": "Check",
    "label": "Is Require PO For Each Invoice Submission"
@@ -370,31 +360,13 @@
    "reqd": 1
   },
   {
-   "default": "0",
-   "fieldname": "is_seperate_invoice_for_site",
-   "fieldtype": "Check",
-   "label": "Is Require Seperate Invoice For Site"
-  },
-  {
    "fieldname": "holiday_list",
    "fieldtype": "Link",
    "label": "Holiday List",
    "options": "Holiday List"
   },
   {
-   "default": "0",
-   "fieldname": "is_invoice_for_full_amount",
-   "fieldtype": "Check",
-   "label": "Is Require Invoice For Full Amount"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_invoice_for_day_by_post",
-   "fieldtype": "Check",
-   "label": "Is require Invoice For Day By Post"
-  },
-  {
-   "depends_on": "is_invoice_for_site",
+   "depends_on": "eval: doc.auto_invoice_based_on=='Invoice For Each Site'",
    "fieldname": "site_wise_option",
    "fieldtype": "Select",
    "label": "Site Wise Option",
@@ -427,12 +399,6 @@
    "label": "Duration In Days"
   },
   {
-   "default": "0",
-   "fieldname": "is_invoice_for_airport",
-   "fieldtype": "Check",
-   "label": "Is Invoice For Airport"
-  },
-  {
    "fieldname": "billing_type",
    "fieldtype": "Select",
    "label": "Billing Type",
@@ -463,10 +429,16 @@
    "fieldtype": "Link",
    "label": "Sales Invoice Letter Head",
    "options": "Letter Head"
+  },
+  {
+   "fieldname": "auto_invoice_based_on",
+   "fieldtype": "Select",
+   "label": "Auto Invoice Based on",
+   "options": "\nInvoice For Each Site\nSeparate Invoice For Site\nInvoice For Full Amount\nInvoice For Day By Post\nInvoice For Airport"
   }
  ],
  "links": [],
- "modified": "2022-01-16 08:03:18.109923",
+ "modified": "2022-01-16 08:11:18.905467",
  "modified_by": "Administrator",
  "module": "Operations",
  "name": "Contracts",
