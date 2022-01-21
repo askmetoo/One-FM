@@ -89,15 +89,19 @@ def generate_contract_invoice(doc, posting_date=None, invoice=None):
 	Shift Type and Attendance
 	"""
 	# get date
+	posting_date = date(2021, 11, 28)
 	has_remaining_days = False
 	if not (posting_date):
 		posting_date = datetime.today().date().replace(day=int(doc.due_date) or 28)
 	if(posting_date.month==datetime.today().month and
 		posting_date.year==datetime.today().year):
+		print(posting_date.month, datetime.today().month,
+			posting_date.year, datetime.today().year)
 		has_remaining_days = True
 
 	start_date = posting_date.replace(day=1)
 	end_date = frappe.utils.get_last_day(posting_date)
+
 	# get sale items as sql tuple ('Pen', 'Book')
 	sale_items = "("
 	for c, i in enumerate(doc.items):
@@ -107,15 +111,25 @@ def generate_contract_invoice(doc, posting_date=None, invoice=None):
 			sale_items+=f" '{i.item_code}',"
 	sale_items += ")"
 
+	# query parameters
+	params = frappe._dict({
+		'start_date':start_date,
+		'remain_start_date': posting_date,
+		'end_date':end_date,
+		'project':doc.project,
+		'sale_items': sale_items,
+	})
 	# check if invoice required in seprate sites
 	if False: #(doc.invoice_type=='single'):
 		invoice_items = []
 		for i in doc.items:
+			#  update params sale_item
+			params.sale_item = i.item_code
 			# loop through sale items and generate invoice
-			attendance_present = len(get_attendance_present(start_date, end_date)) or 1
-			days_off = len(get_holidays(start_date, end_date)) or 1
-			# if(has_remaining_days): #check if there are days upfront
-			# 	attendance_present += len(get_balance_schedule(start_date, end_date))
+			attendance_present = len(get_attendance_present(params)) or 1
+			days_off = len(get_holidays(params)) or 1
+			if(has_remaining_days): #check if there are days upfront
+				attendance_present += len(get_balance_schedule(params))
 			total_engagement = (attendance_present) + (days_off)
 			total_days = 30 * i.head_count
 			if(total_engagement == total_days):
@@ -134,23 +148,20 @@ def generate_contract_invoice(doc, posting_date=None, invoice=None):
 				'qty':i.head_count,
 				'amount':amount
 			})
+		print(invoice_items)
 
 	else:
-		sites = [i.site for i in frappe.db.sql(f"""
-			SELECT DISTINCT(es.site) as site
-			FROM `tabEmployee Schedule` es JOIN
-			`tabPost Type` pt ON pt.name=es.post_type
-			WHERE es.date BETWEEN '2021-11-01' AND '2021-11-30'
-			AND es.project='Head Office' AND pt.sale_item='SRV-SEC-000003-12H-A-26D'
-		;""", as_dict=1)]
-		for site in sites:
+		for site in get_sites(params):
 			invoice_items = []
+			params.site = site
 			for i in doc.items:
+				params.sale_item = i.item_code
 				# loop through sale items and generate invoice
-				attendance_present = len(get_attendance_present(start_date, end_date)) or 1
-				days_off = len(get_holidays(start_date, end_date)) or 1
-				# if(has_remaining_days): #check if there are days upfront
-				# 	attendance_present += len(get_balance_schedule(start_date, end_date))
+				attendance_present = len(get_attendance_present(params)) or 1
+				days_off = len(get_holidays(params)) or 1
+				if(has_remaining_days): #check if there are days upfront
+					attendance_present += len(get_balance_schedule(params))
+				print(attendance_present, days_off)
 				total_engagement = (attendance_present) + (days_off)
 				total_days = 30 * i.head_count
 				if(total_engagement == total_days):
@@ -172,6 +183,77 @@ def generate_contract_invoice(doc, posting_date=None, invoice=None):
 
 			print(site, invoice_items)
 
+
+	return []
+
+
+def get_holidays(params):
+	condition = " "
+	if(params.site):
+		condition += f'AND es.site="{params.site}"'
+	query = frappe.db.sql(f"""
+		SELECT DISTINCT(em.employee_id), em.name, h.holiday_date as holiday,
+		em.holiday_list FROM `tabEmployee` em JOIN `tabHoliday` h
+		ON h.parent=em.holiday_list JOIN `tabEmployee Schedule` es
+		ON es.employee=em.name JOIN `tabPost Type` pt ON
+		pt.name=es.post_type
+		WHERE es.date BETWEEN '{params.start_date}' AND '{params.end_date}'
+		AND h.holiday_date BETWEEN '{params.start_date}' AND '{params.end_date}'
+		AND es.project="{params.project}" AND pt.sale_item="{params.sale_item}"
+		{condition} ORDER by em.name;
+	""", as_dict=1)
+	return query
+
+def get_attendance_present(params):
+	condition = " "
+	if(params.site):
+		condition += f'AND es.site="{params.site}"'
+	query =  frappe.db.sql(f"""
+		SELECT es.name, es.employee, es.employee_availability as available,
+		es.date, IFNULL(NULL, at.attendance_date) as at_date,
+		IFNULL(NULL, at.status) as status,
+		IFNULL(NULL, at.name) as at_name, at.working_hours,
+		st.duration, IFNULL(NULL, at.in_time) as at_in_time,
+		IFNULL(NULL, at.out_time) as at_out_time, es.post_type,
+		es.site, pt.sale_item FROM `tabEmployee Schedule` es
+		JOIN `tabPost Type` pt ON pt.name=es.post_type
+		JOIN `tabAttendance` at ON at.employee=es.employee
+		JOIN `tabShift Type` st ON st.name=es.shift_type
+		WHERE pt.sale_item="{params.sale_item}"
+		AND es.date BETWEEN '{params.start_date}' AND '{params.end_date}'
+		AND es.project="{params.project}" AND at.attendance_date=es.date
+		AND at.status='Present' {condition};
+		""", as_dict=1)
+	return query
+
+def get_balance_schedule(params):
+	condition = " "
+	if(params.site):
+		condition += f'AND es.site="{params.site}"'
+	query = frappe.db.sql(f"""
+		SELECT es.employee, es.employee_availability as available,
+		es.date, es.post_type, es.site, pt.sale_item
+		FROM `tabEmployee Schedule` es
+		JOIN `tabPost Type` pt ON pt.name=es.post_type
+		WHERE pt.sale_item="{params.sale_item}"
+		AND es.date BETWEEN '{params.remain_start_date}' AND '{params.end_date}'
+		AND es.project="{params.project}" AND es.employee_availability='Working'
+		{condition}
+	""", as_dict=1)
+	return query
+
+def get_sites(params):
+	return [i.site for i in frappe.db.sql(f"""
+		SELECT DISTINCT(es.site) as site
+		FROM `tabEmployee Schedule` es JOIN
+		`tabPost Type` pt ON pt.name=es.post_type
+		WHERE es.date BETWEEN '{params.start_date}'
+		 AND '{params.end_date}'
+		AND es.project="{params.project}" AND
+		pt.sale_item IN {params.sale_items}
+	;""", as_dict=1)]
+
+
 	# items = [frappe._dict(
 	# {'item_code':i.item_code,
 	# 'days_off':i.days_off}) for i in doc.items]
@@ -190,47 +272,3 @@ def generate_contract_invoice(doc, posting_date=None, invoice=None):
 	# 	results[i.item_code]=employee_dict
 	# 	employee_list = []
 	# 	employee_dict = {}
-	return []
-
-
-def get_holidays(start_date, end_date):
-	return frappe.db.sql(f"""
-		SELECT DISTINCT(em.employee_id), em.name, h.holiday_date as holiday,
-		em.holiday_list FROM `tabEmployee` em JOIN `tabHoliday` h
-		ON h.parent=em.holiday_list JOIN `tabEmployee Schedule` es
-		ON es.employee=em.name JOIN `tabPost Type` pt ON
-		pt.name=es.post_type
-		WHERE es.date BETWEEN '2021-11-01' AND '2021-11-31'
-		AND h.holiday_date BETWEEN '2021-11-01' AND '2021-11-31'
-		AND es.project='Head Office' AND pt.sale_item='SRV-SEC-000003-12H-A-26D'
-		AND '2021-11-31' ORDER by em.name;
-	""", as_dict=1)
-
-def get_attendance_present(start_date, end_date):
-	return frappe.db.sql(f"""
-		SELECT es.name, es.employee, es.employee_availability as available,
-		es.date, IFNULL(NULL, at.attendance_date) as at_date,
-		IFNULL(NULL, at.status) as status,
-		IFNULL(NULL, at.name) as at_name, at.working_hours,
-		st.duration, IFNULL(NULL, at.in_time) as at_in_time,
-		IFNULL(NULL, at.out_time) as at_out_time, es.post_type,
-		es.site, pt.sale_item FROM `tabEmployee Schedule` es
-		JOIN `tabPost Type` pt ON pt.name=es.post_type
-		JOIN `tabAttendance` at ON at.employee=es.employee
-		JOIN `tabShift Type` st ON st.name=es.shift_type
-		WHERE pt.sale_item='SRV-SEC-000003-12H-A-26D'
-		AND es.date BETWEEN '2021-11-01' AND '2021-11-31'
-		AND es.project='Head Office' AND at.attendance_date=es.date
-		AND at.status='Present';
-		""", as_dict=1)
-
-def get_balance_schedule(start_date, end_date):
-	return frappe.db.sql(f"""
-		SELECT es.employee, es.employee_availability as available,
-		es.date, es.post_type, es.site, pt.sale_item
-		FROM `tabEmployee Schedule` es
-		JOIN `tabPost Type` pt ON pt.name=es.post_type
-		WHERE pt.sale_item='SRV-SEC-000003-12H-A-26D'
-		AND es.date BETWEEN '2021-28-01' AND '2021-11-31'
-		AND es.project='Head Office' AND es.employee_availability='Working';
-	""", as_dict=1)
