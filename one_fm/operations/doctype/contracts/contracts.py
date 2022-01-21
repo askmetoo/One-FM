@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
+from datetime import date, datetime
 import frappe
 from frappe.model.document import Document
 from frappe.utils import cstr,month_diff,today,getdate,date_diff,add_years
@@ -82,11 +83,22 @@ def auto_renew_contracts():
 		frappe.db.commit()
 
 # Monthly invoice
-def get_attendance_data(doc):
+def generate_contract_invoice(doc, posting_date=None, invoice=None):
 	"""
 	Get employee attendance based on Employee Schedule
 	Shift Type and Attendance
 	"""
+	# get date
+	has_remaining_days = False
+	if not (posting_date):
+		posting_date = datetime.today().date().replace(day=int(doc.due_date) or 28)
+	if(posting_date.month==datetime.today().month and
+		posting_date.year==datetime.today().year):
+		has_remaining_days = True
+
+	start_date = posting_date.replace(day=1)
+	end_date = frappe.utils.get_last_day(posting_date)
+	# get sale items as sql tuple ('Pen', 'Book')
 	sale_items = "("
 	for c, i in enumerate(doc.items):
 		if(len(doc.items)==c+1):
@@ -97,9 +109,11 @@ def get_attendance_data(doc):
 
 	invoice_items = []
 	for i in doc.items:
-		attendance_present = len(get_attendance_present()) or 1
-		days_off = len(get_holidays()) or 1
-
+		# loop through sale items and generate invoice
+		attendance_present = len(get_attendance_present(start_date, end_date)) or 1
+		days_off = len(get_holidays(start_date, end_date)) or 1
+		# if(has_remaining_days): #check if there are days upfront
+		# 	attendance_present += len(get_balance_schedule(start_date, end_date))
 		total_engagement = (attendance_present) + (days_off)
 		total_days = 30 * i.head_count
 		if(total_engagement == total_days):
@@ -142,7 +156,7 @@ def get_attendance_data(doc):
 	return []
 
 
-def get_holidays():
+def get_holidays(start_date, end_date):
 	return frappe.db.sql(f"""
 		SELECT DISTINCT(em.employee_id), em.name, h.holiday_date as holiday,
 		em.holiday_list FROM `tabEmployee` em JOIN `tabHoliday` h
@@ -155,7 +169,7 @@ def get_holidays():
 		AND '2021-11-31' ORDER by em.name;
 	""", as_dict=1)
 
-def get_attendance_present():
+def get_attendance_present(start_date, end_date):
 	return frappe.db.sql(f"""
 		SELECT es.name, es.employee, es.employee_availability as available,
 		es.date, IFNULL(NULL, at.attendance_date) as at_date,
@@ -172,3 +186,14 @@ def get_attendance_present():
 		AND es.project='Head Office' AND at.attendance_date=es.date
 		AND at.status='Present';
 		""", as_dict=1)
+
+def get_balance_schedule(start_date, end_date):
+	return frappe.db.sql(f"""
+		SELECT es.employee, es.employee_availability as available,
+		es.date, es.post_type, es.site, pt.sale_item
+		FROM `tabEmployee Schedule` es
+		JOIN `tabPost Type` pt ON pt.name=es.post_type
+		WHERE pt.sale_item='SRV-SEC-000003-12H-A-26D'
+		AND es.date BETWEEN '2021-28-01' AND '2021-11-31'
+		AND es.project='Head Office' AND es.employee_availability='Working';
+	""", as_dict=1)
