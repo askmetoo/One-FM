@@ -107,33 +107,70 @@ def generate_contract_invoice(doc, posting_date=None, invoice=None):
 			sale_items+=f" '{i.item_code}',"
 	sale_items += ")"
 
-	invoice_items = []
-	for i in doc.items:
-		# loop through sale items and generate invoice
-		attendance_present = len(get_attendance_present(start_date, end_date)) or 1
-		days_off = len(get_holidays(start_date, end_date)) or 1
-		# if(has_remaining_days): #check if there are days upfront
-		# 	attendance_present += len(get_balance_schedule(start_date, end_date))
-		total_engagement = (attendance_present) + (days_off)
-		total_days = 30 * i.head_count
-		if(total_engagement == total_days):
-			amount = i.head_count*i.rate*30
-		elif (total_engagement > total_days):
-			amount = i.head_count*i.rate*30
-			amount += amount * ((total_engagement-total_days)/total_days)
-		else:
-			amount = i.head_count*i.rate*30
-			amount -= amount * (((total_engagement-total_days)/total_days)*-1)
+	# check if invoice required in seprate sites
+	if False: #(doc.invoice_type=='single'):
+		invoice_items = []
+		for i in doc.items:
+			# loop through sale items and generate invoice
+			attendance_present = len(get_attendance_present(start_date, end_date)) or 1
+			days_off = len(get_holidays(start_date, end_date)) or 1
+			# if(has_remaining_days): #check if there are days upfront
+			# 	attendance_present += len(get_balance_schedule(start_date, end_date))
+			total_engagement = (attendance_present) + (days_off)
+			total_days = 30 * i.head_count
+			if(total_engagement == total_days):
+				amount = i.head_count*i.rate*30
+			elif (total_engagement > total_days):
+				amount = i.head_count*i.rate*30
+				amount += amount * ((total_engagement-total_days)/total_days)
+			else:
+				amount = i.head_count*i.rate*30
+				amount -= amount * (((total_engagement-total_days)/total_days)*-1)
 
-		invoice_items.append({
-			'item_code':i.item_code,
-			'price_list_rate':i.price_list_rate,
-			'rate':i.rate,
-			'qty':i.head_count,
-			'amount':amount
-		})
+			invoice_items.append({
+				'item_code':i.item_code,
+				'price_list_rate':i.price_list_rate,
+				'rate':i.rate,
+				'qty':i.head_count,
+				'amount':amount
+			})
 
-	print(invoice_items)
+	else:
+		sites = [i.site for i in frappe.db.sql(f"""
+			SELECT DISTINCT(es.site) as site
+			FROM `tabEmployee Schedule` es JOIN
+			`tabPost Type` pt ON pt.name=es.post_type
+			WHERE es.date BETWEEN '2021-11-01' AND '2021-11-30'
+			AND es.project='Head Office' AND pt.sale_item='SRV-SEC-000003-12H-A-26D'
+		;""", as_dict=1)]
+		for site in sites:
+			invoice_items = []
+			for i in doc.items:
+				# loop through sale items and generate invoice
+				attendance_present = len(get_attendance_present(start_date, end_date)) or 1
+				days_off = len(get_holidays(start_date, end_date)) or 1
+				# if(has_remaining_days): #check if there are days upfront
+				# 	attendance_present += len(get_balance_schedule(start_date, end_date))
+				total_engagement = (attendance_present) + (days_off)
+				total_days = 30 * i.head_count
+				if(total_engagement == total_days):
+					amount = i.head_count*i.rate*30
+				elif (total_engagement > total_days):
+					amount = i.head_count*i.rate*30
+					amount += amount * ((total_engagement-total_days)/total_days)
+				else:
+					amount = i.head_count*i.rate*30
+					amount -= amount * (((total_engagement-total_days)/total_days)*-1)
+
+				invoice_items.append({
+					'item_code':i.item_code,
+					'price_list_rate':i.price_list_rate,
+					'rate':i.rate,
+					'qty':i.head_count,
+					'amount':amount
+				})
+
+			print(site, invoice_items)
 
 	# items = [frappe._dict(
 	# {'item_code':i.item_code,
