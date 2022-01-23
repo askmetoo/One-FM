@@ -183,6 +183,9 @@ frappe.ui.form.on('Contracts', {
 		}
 		frm.refresh_field("items");
 
+		// buttons for invoice
+		add_invoice_buttons(frm);
+
 	},
 	customer_address:function(frm){
 		if(frm.doc.customer_address){
@@ -440,3 +443,45 @@ frappe.ui.form.on('Contract Addendum', {
 		}
 	}
 })
+
+// Invoice Buttons
+let add_invoice_buttons = frm => {
+	if(!frm.is_new()){
+		frm.add_custom_button('Add Invoice', () => {
+			create_monthly_invoice(frm);
+		});
+		frm.change_custom_button_type('Add Invoice', null, 'primary');
+		// change button collor
+	}
+}
+
+// create monthly Invoice
+let create_monthly_invoice = (frm) => {
+	let d = new frappe.ui.Dialog({
+	    title: 'Create Invoice - Select calendar month and year',
+	    fields: [
+	        {
+	            label: 'Period',
+	            fieldname: 'posting_date',
+	            fieldtype: 'Date',
+				reqd: 1
+	        }
+	    ],
+	    primary_action_label: 'Create',
+	    primary_action(values) {
+			frappe.confirm('Are you sure you want to proceed?',
+		    () => {
+		        // action to perform if Yes is selected
+				console.log(values);
+				frm.call('create_monthly_invoice', values).then(res=>{
+
+				})
+		    }, () => {
+		        // action to perform if No is selected
+		    })
+
+	        d.hide();
+	    }
+	});
+	d.show();
+}
