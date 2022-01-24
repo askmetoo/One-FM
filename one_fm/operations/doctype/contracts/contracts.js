@@ -474,11 +474,9 @@ let create_monthly_invoice = (frm) => {
 		    () => {
 		        // action to perform if Yes is selected
 				frm.call('create_monthly_invoice', values).then(res=>{
-					console.log(res)
 					if(res.message){
 						frappe.msgprint(__("Invoice created successfully."))
-						frappe.set_route(['List', 'Sales Invoice', 'List'],
-							{'name': ['in', res.message]})
+						frappe.set_route('List', 'Sales Invoice', {contracts:frm.doc.name})
 					}
 				})
 		    }, () => {

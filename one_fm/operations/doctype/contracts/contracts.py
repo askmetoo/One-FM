@@ -110,87 +110,45 @@ def generate_contract_invoice(doc, posting_date=None):
 	Get employee attendance based on Employee Schedule
 	Shift Type and Attendance
 	"""
-	try:
-		# get date
-		if not posting_date:
-			posting_date = datetime.today().date()
-		has_remaining_days = False
-		if not (posting_date):
-			posting_date = datetime.today().date().replace(day=int(doc.due_date) or 28)
-		if(posting_date.month==datetime.today().month and
-			posting_date.year==datetime.today().year):
-			has_remaining_days = True
+	if(doc.billing_type=='Monthly'):
+		try:
+			# get date
+			if not posting_date:
+				posting_date = datetime.today().date()
+			has_remaining_days = False
+			if not (posting_date):
+				posting_date = datetime.today().date().replace(day=int(doc.due_date) or 28)
+			if(posting_date.month==datetime.today().month and
+				posting_date.year==datetime.today().year):
+				has_remaining_days = True
 
-		start_date = posting_date.replace(day=1)
-		end_date = frappe.utils.get_last_day(posting_date)
-		last_day = end_date.day
+			start_date = posting_date.replace(day=1)
+			end_date = frappe.utils.get_last_day(posting_date)
+			last_day = end_date.day
 
-		created_invoices = []
-		# get sale items as sql tuple ('Pen', 'Book')
-		sale_items = "("
-		for c, i in enumerate(doc.items):
-			if(len(doc.items)==c+1):
-				sale_items+=f" '{i.item_code}'"
-			else:
-				sale_items+=f" '{i.item_code}',"
-		sale_items += ")"
-
-		# query parameters
-		params = frappe._dict({
-			'start_date':start_date,
-			'remain_start_date': posting_date,
-			'end_date':end_date,
-			'project':doc.project,
-			'sale_items': sale_items,
-		})
-		# check if invoice required in seprate sites
-		if False: #(doc.invoice_type=='single'):
-			invoice_items = []
-			for i in doc.items:
-				#  update params sale_item
-				params.sale_item = i.item_code
-				# loop through sale items and generate invoice
-				attendance_present = len(get_attendance_present(params)) or 1
-				days_off = len(get_holidays(params)) or 1
-				if(has_remaining_days): #check if there are days upfront
-					attendance_present += len(get_balance_schedule(params))
-				total_engagement = (attendance_present) + (days_off)
-				total_days = last_day * i.head_count
-				if(total_engagement == total_days):
-					amount = i.head_count*last_day
-				elif (total_engagement > total_days):
-					try:
-						if(i.overtime_rate):
-							amount += ((total_engagement-total_days)*i.overtime_rate)/i.rate
-						else:
-							amount += ((total_engagement-total_days)*i.rate*1.5)/i.rate
-					except Exception as e:
-						amount += ((total_engagement-total_days)*i.rate*1.5)/i.rate
+			created_invoices = []
+			# get sale items as sql tuple ('Pen', 'Book')
+			sale_items = "("
+			for c, i in enumerate(doc.items):
+				if(len(doc.items)==c+1):
+					sale_items+=f" '{i.item_code}'"
 				else:
-					amount = i.head_count*last_day
-					amount -= amount * (((total_engagement-total_days)/total_days)*-1)
+					sale_items+=f" '{i.item_code}',"
+			sale_items += ")"
 
-				invoice_items.append({
-					'item_code':i.item_code,
-					'price_list_rate':i.price_list_rate,
-					'rate':i.rate,
-					'qty':amount,
-					'days':amount,
-					'description': f"Total man days for {MONTH_MAP[posting_date.month]}, {posting_date.year} is {amount/i.rate}",
-					'monthly_rate':i.rate,
-					'contracts_uom':i.uom,
-				})
-			created_invoices.append(make_invoice(frappe._dict({
-				'contracts':doc,
-				'invoice_items':invoice_items,
-				'posting_date':posting_date,
-				})))
-
-		else:
-			for site in get_sites(params):
+			# query parameters
+			params = frappe._dict({
+				'start_date':start_date,
+				'remain_start_date': posting_date,
+				'end_date':end_date,
+				'project':doc.project,
+				'sale_items': sale_items,
+			})
+			# check if invoice required in seprate sites
+			if not doc.create_sales_invoice_as: #(doc.invoice_type=='single'):
 				invoice_items = []
-				params.site = site
 				for i in doc.items:
+					#  update params sale_item
 					params.sale_item = i.item_code
 					# loop through sale items and generate invoice
 					attendance_present = len(get_attendance_present(params)) or 1
@@ -198,14 +156,10 @@ def generate_contract_invoice(doc, posting_date=None):
 					if(has_remaining_days): #check if there are days upfront
 						attendance_present += len(get_balance_schedule(params))
 					total_engagement = (attendance_present) + (days_off)
-					total_days = i.head_count*last_day
-
-					print(total_engagement, total_days)
+					total_days = last_day * i.head_count
 					if(total_engagement == total_days):
 						amount = i.head_count*last_day
 					elif (total_engagement > total_days):
-						# consider overtime
-						amount = i.head_count*last_day
 						try:
 							if(i.overtime_rate):
 								amount += ((total_engagement-total_days)*i.overtime_rate)/i.rate
@@ -224,23 +178,121 @@ def generate_contract_invoice(doc, posting_date=None):
 						'qty':amount,
 						'days':amount,
 						'description': f"Total man days for {MONTH_MAP[posting_date.month]}, {posting_date.year} is {amount/i.rate}",
-						'site':site,
 						'monthly_rate':i.rate,
 						'contracts_uom':i.uom,
 					})
-
-				print(site, invoice_items)
-				# make invoice
 				created_invoices.append(make_invoice(frappe._dict({
 					'contracts':doc,
 					'invoice_items':invoice_items,
 					'posting_date':posting_date,
-					'title':site
 					})))
-		return created_invoices
-	except Exception as e:
-		frappe.log_error(str(e), 'Make monhtly contrcat invoice')
-		frappe.throw(str(e))
+
+			elif (doc.create_sales_invoice_as=='Separate Invoice for Each Site'):
+				for site in get_sites(params):
+					invoice_items = []
+					params.site = site
+					for i in doc.items:
+						params.sale_item = i.item_code
+						# loop through sale items and generate invoice
+						attendance_present = len(get_attendance_present(params)) or 1
+						days_off = len(get_holidays(params)) or 1
+						if(has_remaining_days): #check if there are days upfront
+							attendance_present += len(get_balance_schedule(params))
+						total_engagement = (attendance_present) + (days_off)
+						total_days = i.head_count*last_day
+
+						# print(total_engagement, total_days)
+						if(total_engagement == total_days):
+							amount = i.head_count*last_day
+						elif (total_engagement > total_days):
+							# consider overtime
+							amount = i.head_count*last_day
+							try:
+								if(i.overtime_rate):
+									amount += ((total_engagement-total_days)*i.overtime_rate)/i.rate
+								else:
+									amount += ((total_engagement-total_days)*i.rate*1.5)/i.rate
+							except Exception as e:
+								amount += ((total_engagement-total_days)*i.rate*1.5)/i.rate
+						else:
+							amount = i.head_count*last_day
+							amount -= amount * (((total_engagement-total_days)/total_days)*-1)
+
+						invoice_items.append({
+							'item_code':i.item_code,
+							'price_list_rate':i.price_list_rate,
+							'rate':i.rate,
+							'qty':amount,
+							'days':amount,
+							'description': f"Total man days for {MONTH_MAP[posting_date.month]}, {posting_date.year} is {amount/i.rate}",
+							'site':site,
+							'monthly_rate':i.rate,
+							'contracts_uom':i.uom,
+						})
+
+					# print(site, invoice_items)
+					# make invoice
+					created_invoices.append(make_invoice(frappe._dict({
+						'contracts':doc,
+						'invoice_items':invoice_items,
+						'posting_date':posting_date,
+						'title':site
+						})))
+			elif (doc.create_sales_invoice_as=='Separate Item Line for Each Site'):
+				invoice_items = []
+				for site in get_sites(params):
+					params.site = site
+					for i in doc.items:
+						params.sale_item = i.item_code
+						# loop through sale items and generate invoice
+						attendance_present = len(get_attendance_present(params)) or 1
+						days_off = len(get_holidays(params)) or 1
+						if(has_remaining_days): #check if there are days upfront
+							attendance_present += len(get_balance_schedule(params))
+						total_engagement = (attendance_present) + (days_off)
+						total_days = i.head_count*last_day
+
+						# print(total_engagement, total_days)
+						if(total_engagement == total_days):
+							amount = i.head_count*last_day
+						elif (total_engagement > total_days):
+							# consider overtime
+							amount = i.head_count*last_day
+							try:
+								if(i.overtime_rate):
+									amount += ((total_engagement-total_days)*i.overtime_rate)/i.rate
+								else:
+									amount += ((total_engagement-total_days)*i.rate*1.5)/i.rate
+							except Exception as e:
+								amount += ((total_engagement-total_days)*i.rate*1.5)/i.rate
+						else:
+							amount = i.head_count*last_day
+							amount -= amount * (((total_engagement-total_days)/total_days)*-1)
+
+						invoice_items.append({
+							'item_code':i.item_code,
+							'price_list_rate':i.price_list_rate,
+							'rate':i.rate,
+							'qty':amount,
+							'days':amount,
+							'description': f"Total man days for {MONTH_MAP[posting_date.month]}, {posting_date.year} is {amount/i.rate}",
+							'site':site,
+							'monthly_rate':i.rate,
+							'contracts_uom':i.uom,
+						})
+
+					# print(site, invoice_items)
+					# make invoice
+				created_invoices.append(make_invoice(frappe._dict({
+					'contracts':doc,
+					'invoice_items':invoice_items,
+					'posting_date':posting_date,
+					'title': "Separate Item Line"
+					})))
+			return created_invoices
+		except Exception as e:
+			frappe.log_error(str(e), 'Make monhtly contrcat invoice')
+			frappe.throw(str(e))
 	return []
 
 
