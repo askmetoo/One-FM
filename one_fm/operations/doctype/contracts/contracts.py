@@ -39,13 +39,13 @@ class Contracts(Document):
 	def create_monthly_invoice(self, **kwargs):
 		last_day = frappe.utils.get_last_day(frappe.form_dict.posting_date)
 		posting_date = datetime.strptime(frappe.form_dict.posting_date, '%Y-%m-%d').date()
-		if(datetime.today().date()>last_day):
-			posting_date = last_day
-		else:
+		# if(datetime.today().date()>last_day):
+		# 	posting_date = last_day
+		# else:
 			# datetime.today().date()==posting_date(day=int(self.due_date))
-			posting_date = datetime.today().date()
+			# posting_date = datetime.today().date()
 		# create invoice
-		generate_contract_invoice(self, posting_date)
+		return generate_contract_invoice(self, posting_date)
 
 
 

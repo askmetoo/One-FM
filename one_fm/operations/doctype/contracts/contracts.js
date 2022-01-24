@@ -446,7 +446,7 @@ frappe.ui.form.on('Contract Addendum', {
 
 // Invoice Buttons
 let add_invoice_buttons = frm => {
-	if(!frm.is_new()){
+	if(!frm.is_new() && frm.doc.billing_type=="Monthly"){
 		frm.add_custom_button('Add Invoice', () => {
 			create_monthly_invoice(frm);
 		});
@@ -472,9 +472,13 @@ let create_monthly_invoice = (frm) => {
 			frappe.confirm('Are you sure you want to proceed?',
 		    () => {
 		        // action to perform if Yes is selected
-				console.log(values);
 				frm.call('create_monthly_invoice', values).then(res=>{
-
+					console.log(res)
+					if(res.message){
+						frappe.msgprint(__("Invoice created successfully."))
+						frappe.set_route(['List', 'Sales Invoice', 'List'],
+							{'name': ['in', res.message]})
+					}
 				})
 		    }, () => {
 		        // action to perform if No is selected
