@@ -472,6 +472,10 @@ let create_monthly_invoice = (frm) => {
 	    primary_action(values) {
 			frappe.confirm('Are you sure you want to proceed?',
 		    () => {
+				frappe.show_alert({
+				    message:__('Generating Contracts Invoice.'),
+				    indicator:'green'
+				}, 5);
 		        // action to perform if Yes is selected
 				frm.call('create_monthly_invoice', values).then(res=>{
 					if(res.message){
