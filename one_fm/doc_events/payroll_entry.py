@@ -148,7 +148,7 @@ def set_bank_details(self, employee_details):
 
 		# generate html template to show to user screen
 		message = frappe.render_template(
-			'one_fm/api/doc_methods/templates/payroll/bank_issue.html',
+			'one_fm/doc_events/templates/payroll/bank_issue.html',
 			context={'employees':employee_missing_detail, 'mpi':mpi}
 		)
 		frappe.throw(_(message))
