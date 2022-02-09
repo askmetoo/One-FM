@@ -28,8 +28,43 @@ import pandas as pd
 from erpnext.hr.utils import get_holidays_for_employee
 
 
+def create_notification_log(subject, message, for_users, reference_doc, mobile_notification=None):
+	for user in for_users:
+		doc = frappe.new_doc('Notification Log')
+		doc.subject = subject
+		doc.email_content = message
+		doc.for_user = user
+		doc.document_type = reference_doc.doctype
+		doc.document_name = reference_doc.name
+		doc.from_user = reference_doc.modified_by
+		doc.one_fm_mobile_app = mobile_notification
+		doc.save(ignore_permissions=True)
+		frappe.publish_realtime(event='eval_js', message="frappe.show_alert({message: '"+message+"', indicator: 'blue'})", user=user)
+	frappe.db.commit()
+
+def haversine(ofc_lat, ofc_lng, emp_lat, emp_lng):
+	"""
+	Calculate the great circle distance between two points
+	on the earth (specified in decimal degrees)
+	"""
+	from math import radians, cos, sin, asin, sqrt
+	# convert decimal degrees to radians
+	try:
+		lon1, lat1, lon2, lat2 = map(
+			radians, [float(ofc_lng), float(ofc_lat), float(emp_lng), float(emp_lat)])
+		# haversine formula
+		dlon = lon2 - lon1
+		dlat = lat2 - lat1
+		a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+		c = 2 * asin(sqrt(a))
+		r = 6371000  # Radius of earth in meters. Use 3956 for miles or 6371 for kilometres
+		return c * r
+	except Exception as e:
+		frappe.throw(e)
 
 
+def get_employee_user_id(employee):
+	return frappe.get_value("Employee", {"name": employee}, "user_id")
 
 def check_upload_original_visa_submission_reminder2():
     pam_visas = frappe.db.sql_list("select name from `tabPAM Visa` where upload_original_visa_submitted=0 and upload_original_visa_reminder2_done=1")
@@ -2222,6 +2257,37 @@ def create_additional_salary_for_ot(employee, amount, overtime_component):
 	additional_salary.notes = "Overtime Earning"
 	additional_salary.insert()
 	additional_salary.submit()
+
+def create_additional_salary(employee, amount, component, payroll_date, notes):
+	""" 
+	This function creates a document in the Additonal Salary doctype.
+
+	Args:
+		employee: employee code (eg: HR-EMP-0001)
+		amount: amount to be considered in the additional salary
+		component: type of component
+		payroll_date: date that falls in the range during which this additional salary must be considered for payroll
+		notes: Any additional notes
+	
+	Raises:
+		exception e: Any internal server error
+	"""
+
+	try:
+		additional_salary = frappe.new_doc("Additional Salary")
+		additional_salary.employee = employee
+		additional_salary.salary_component = component
+		additional_salary.amount = amount
+		additional_salary.payroll_date = payroll_date
+		additional_salary.company = erpnext.get_default_company()
+		additional_salary.overwrite_salary_structure_amount = 1
+		additional_salary.notes = notes
+		additional_salary.insert()
+		additional_salary.submit()
+	
+	except Exception as e:
+		frappe.log_error(e)
+		frappe.throw(_(e))
 
 def response(message, data, success, status_code):
      # Function to create response to the API. It generates json with message, success, data object and the status code.

@@ -9,6 +9,7 @@ from frappe.utils import cstr
 from frappe.model.document import Document
 import json
 from frappe.core.doctype.version.version import get_diff
+from one_fm.utils import create_notification_log
 
 class OperationsSite(Document):
 	def validate(self):
@@ -156,18 +157,6 @@ class OperationsSite(Document):
 			recipient_list.append(manager_user)
 		recipient_list.append(project_manager_user)		
 		return recipient_list
-
-def create_notification_log(subject, message, for_users, reference_doc):
-	for user in for_users:
-		doc = frappe.new_doc('Notification Log')
-		doc.subject = subject
-		doc.email_content = message
-		doc.for_user = user
-		doc.document_type = reference_doc.doctype
-		doc.document_name = reference_doc.name
-		doc.from_user = reference_doc.modified_by
-		doc.insert(ignore_permissions=True)
-		frappe.publish_realtime(event='eval_js', message="frappe.show_alert({message: '"+message+"', indicator: 'blue'})", user=user)
 	
 
 @frappe.whitelist()
