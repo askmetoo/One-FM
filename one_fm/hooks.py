@@ -4,7 +4,7 @@ from . import __version__ as app_version
 import frappe as _frappe
 from frappe import _
 from erpnext.hr.doctype.shift_type.shift_type import ShiftType
-from one_fm.api.doc_methods.shift_type import process_auto_attendance
+from one_fm.doc_methods.shift_type import process_auto_attendance
 
 
 app_name = "one_fm"

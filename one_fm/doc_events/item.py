@@ -1,6 +1,12 @@
 import frappe
 from frappe import _
 
+
+@frappe.whitelist(allow_guest=True)
+def item_naming_series(doc, method):
+    doc.name = doc.item_code
+    doc.item_name = doc.item_code
+
 def insert_naming_series(series):
     """insert series if missing"""
     if frappe.db.get_value('Series', series, 'name', order_by="name") == None:

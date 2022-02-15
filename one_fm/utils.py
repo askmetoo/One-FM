@@ -86,8 +86,6 @@ def check_upload_original_visa_submission_reminder2():
         frappe.sendmail(sender=sender, recipients= recipient,
             content=msg, subject="PAM Visa Reminder", delayed=False)
 
-
-
 def check_upload_original_visa_submission_reminder1():
     pam_visas = frappe.db.sql_list("select name from `tabPAM Visa` where upload_original_visa_submitted=0 and upload_original_visa_reminder2_start=1")
 
@@ -97,7 +95,6 @@ def check_upload_original_visa_submission_reminder1():
         pam_visa_doc.upload_original_visa_reminder2_start = 0
         pam_visa_doc.upload_original_visa_reminder2_done = 1
         pam_visa_doc.save(ignore_permissions = True)
-
 
         page_link = "http://206.189.228.82/desk#Form/PAM Visa/" + cstr(pam_visa)
         # page_link = get_url("/desk#Form/PAM Visa/" + doc.name)
@@ -109,10 +106,6 @@ def check_upload_original_visa_submission_reminder1():
         frappe.sendmail(sender=sender, recipients= recipient,
             content=msg, subject="PAM Visa Reminder", cc=cc, delayed=False)
 
-
-
-
-
 def check_upload_original_visa_submission_daily():
     pam_visas = frappe.db.sql_list("select name from `tabPAM Visa` where upload_original_visa_submitted=0 and upload_original_visa_reminder2_start=0 and upload_original_visa_reminder2_done=0 and upload_original_visa_status!='No Response' and pam_visa_approval_submitted=1")
 
@@ -120,7 +113,6 @@ def check_upload_original_visa_submission_daily():
         pam_visa_doc = frappe.get_doc("PAM Visa", pam_visa)
         pam_visa_doc.upload_original_visa_reminder2_start = 1
         pam_visa_doc.save(ignore_permissions = True)
-
 
 def check_pam_visa_approval_submission_seven():
     pam_visas = frappe.db.sql_list("select name from `tabPAM Visa` where pam_visa_approval_submitted=0 and pam_visa_approval_reminder2_done=1")
@@ -141,9 +133,6 @@ def check_pam_visa_approval_submission_seven():
 
         frappe.sendmail(sender=sender, recipients= recipient,
             content=msg, subject="PAM Visa Reminder", delayed=False)
-
-
-
 
 def check_pam_visa_approval_submission_six_half():
     pam_visas = frappe.db.sql_list("select name from `tabPAM Visa` where pam_visa_approval_submitted=0 and pam_visa_approval_reminder2_start=1")
@@ -176,7 +165,6 @@ def check_pam_visa_approval_submission_daily():
         pam_visa_doc.save(ignore_permissions = True)
 
 
-
 def check_upload_tasriah_reminder2():
     pam_visas = frappe.db.sql_list("select name from `tabPAM Visa` where upload_tasriah_submitted=0 and upload_tasriah_reminder2_done=1")
 
@@ -195,9 +183,6 @@ def check_upload_tasriah_reminder2():
 
         frappe.sendmail(sender=sender, recipients= recipient,
             content=msg, subject="PAM Visa Reminder", delayed=False)
-
-
-
 
 
 def check_upload_tasriah_reminder1():
@@ -222,9 +207,6 @@ def check_upload_tasriah_reminder1():
             content=msg, subject="PAM Visa Reminder", cc=cc, delayed=False)
 
 
-
-
-
 def check_upload_tasriah_submission_nine():
     pam_visas = frappe.db.sql_list("select name from `tabPAM Visa` where pam_visa_submitted_supervisor=1 and upload_tasriah_submitted=0 and upload_tasriah_reminder2_start=0 and upload_tasriah_reminder2_done=0 and upload_tasriah_status!='No Response'")
 
@@ -238,9 +220,6 @@ def check_upload_tasriah_submission_nine():
         if get_defferent>=0:
             pam_visa_doc.upload_tasriah_reminder2_start = 1
             pam_visa_doc.save(ignore_permissions = True)
-
-
-
 
 
 def check_grp_supervisor_submission_daily():
@@ -283,7 +262,6 @@ def check_grp_operator_submission_four_half():
             content=msg, subject="PAM Visa Reminder",cc=cc, delayed=False)
 
 
-
 def check_grp_operator_submission_four():
     pam_visas = frappe.db.sql_list("select name from `tabPAM Visa` where pam_visa_submitted=0 and pam_visa_reminder2_start=1")
 
@@ -303,8 +281,6 @@ def check_grp_operator_submission_four():
 
         frappe.sendmail(sender=sender, recipients= recipient,
             content=msg, subject="PAM Visa Reminder", delayed=False)
-
-
 
 
 def check_grp_operator_submission_daily():
@@ -458,9 +434,6 @@ def send_gp_letter_reminder():
                         content=msg, subject="GP Letter Request No Response", delayed=False)
 
 
-
-
-
 def send_gp_email(pid, candidates, gp_letter_request):
     gp_letter_doc = frappe.get_doc("GP Letter Request", gp_letter_request)
     page_link = "http://206.189.228.82/gp_letter_request?pid=" + pid
@@ -561,7 +534,6 @@ def create_gp_letter_request():
             gp_letter_doc = frappe.get_doc("GP Letter", gp_letter)
             gp_letter_doc.gp_letter_request_reference = doc.name
             gp_letter_doc.save(ignore_permissions = True)
-
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1117,7 +1089,6 @@ def pam_salary_certificate_expiry_date():
             print("PAM Salary Certificate will Expire after {0} day".format(date_difference))
 
 
-
 @frappe.whitelist(allow_guest=True)
 def pam_authorized_signatory():
     pam_authorized_signatory = frappe.db.sql("select name,authorized_signatory_expiry_date from `tabPAM Authorized Signatory List`")
@@ -1139,7 +1110,6 @@ def pam_authorized_signatory():
             }).insert(ignore_permissions=True)
 
             print("PAM Authorized Signatory will Expire after {0} day".format(date_difference))
-
 
 
 @frappe.whitelist(allow_guest=True)

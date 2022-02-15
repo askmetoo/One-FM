@@ -1,6 +1,6 @@
 import frappe
 from frappe.utils import get_datetime, add_to_date, cstr, flt
-from one_fm.api.doc_events import haversine
+from one_fm.utils import haversine
 from frappe import _
 
 @frappe.whitelist()
