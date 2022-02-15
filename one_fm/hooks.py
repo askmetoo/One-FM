@@ -349,7 +349,7 @@ scheduler_events = {
 
 	"monthly": [
 		"one_fm.accommodation.utils.execute_monthly",
-		"one_fm.utils.send_roster_report"
+		"one_fm.one_fm.page.roster.roster.send_roster_report"
 
 	],
 
@@ -409,7 +409,7 @@ scheduler_events = {
 			'one_fm.grd.utils.sendmail_reminder_to_book_appointment_for_pifss',
 			'one_fm.grd.utils.sendmail_reminder_to_collect_pifss_documents',
 			'one_fm.hiring.doctype.transfer_paper.transfer_paper.check_signed_workContract_employee_completed',
-			'one_fm.utils.issue_roster_actions'
+			'one_fm.one_fm.page.roster.roster.issue_roster_actions'
 		],
 		"0 9 * * *": [
 			'one_fm.utils.check_upload_tasriah_submission_nine',
