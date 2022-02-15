@@ -178,7 +178,7 @@ doc_events = {
 		"on_update":"one_fm.hiring.utils.set_mandatory_feilds_in_employee_for_Kuwaiti"
 	},
 	"Employee Grade": {
-		"validate": "one_fm.one_fm.utils.employee_grade_validate"
+		"validate": "one_fm.doc_events.employee_grade.employee_grade_validate"
 	},
 	"Job Applicant": {
 		"validate": "one_fm.utils.validate_job_applicant",
@@ -192,94 +192,92 @@ doc_events = {
 		"onload": "one_fm.hiring.utils.job_offer_onload"
 	},
 	"Shift Type": {
-		"autoname": "one_fm.api.doc_events.naming_series"
+		"autoname": "one_fm.doc_events.shift_type.naming_series"
 	},
 	"Warehouse": {
-		"autoname": "one_fm.utils.warehouse_naming_series",
-		"before_insert": "one_fm.utils.before_insert_warehouse",
-		"on_update": "one_fm.utils.set_warehouse_contact_from_project"
+		"autoname": "one_fm.doc_events.warehouse.warehouse_naming_series",
+		"before_insert": "one_fm.doc_events.warehouse.before_insert_warehouse",
+		"on_update": "one_fm.doc_events.warehouse.set_warehouse_contact_from_project"
 	},
 	"Vehicle": {
-		"autoname": "one_fm.fleet_management.utils.vehicle_naming_series",
-		"after_insert": "one_fm.fleet_management.doctype.vehicle_leasing_contract.vehicle_leasing_contract.after_insert_vehicle"
+		"autoname": "one_fm.doc_events.vehicle.vehicle_naming_series",
+		"after_insert": "one_fm.doc_events.vehicle.after_insert_vehicle"
 	},
 	"Item Group": {
-		"autoname": "one_fm.utils.item_group_naming_series",
-		"before_insert": "one_fm.utils.validate_get_item_group_parent",
-		"after_insert": "one_fm.utils.after_insert_item_group"
+		"before_insert": "one_fm.doc_events.item_group.validate_get_item_group_parent",
+		"after_insert": "one_fm.doc_events.item_group.after_insert_item_group"
 	},
 	"Item": {
-		"autoname": "one_fm.utils.item_naming_series",
-		"before_insert": "one_fm.utils.before_insert_item",
-		"validate": "one_fm.utils.validate_item"
+		"autoname": "one_fm.doc_events.item.item_naming_series",
+		"before_insert": "one_fm.doc_events.item.before_insert_item",
+		"validate": "one_fm.doc_events.item.validate_item"
 	},
 	"Supplier Group": {
-		"on_update": "one_fm.utils.supplier_group_on_update",
+		"on_update": "one_fm.doc_events.supplier_group.supplier_group_on_update",
 	},
 	"Bank Account": {
-		"on_update": "one_fm.utils.bank_account_on_update",
-		"on_trash": "one_fm.utils.bank_account_on_trash",
-		"validate": "one_fm.utils.validate_iban_is_filled",
+		"on_update": "one_fm.doc_events.bank_account.bank_account_on_update",
+		"on_trash": "one_fm.doc_events.bank_account.bank_account_on_trash",
+		"validate": "one_fm.doc_events.bank_account.validate_iban_is_filled",
 	},
 	"Employee Checkin": {
-		"validate": "one_fm.api.doc_events.employee_checkin_validate",
-		"after_insert": "one_fm.api.doc_events.checkin_after_insert",
-		"on_update": "one_fm.utils.create_additional_salary_for_overtime_request_for_head_office"
+		"validate": "one_fm.doc_events.employee_checkin.employee_checkin_validate",
+		"after_insert": "one_fm.doc_events.employee_checkin.checkin_after_insert"
 	},
 	"Purchase Receipt": {
-		"before_submit": "one_fm.purchase.utils.before_submit_purchase_receipt",
+		"before_submit": "one_fm.doc_events.purchase_receipt.before_submit_purchase_receipt",
 		"on_submit": "one_fm.one_fm.doctype.customer_asset.customer_asset.on_purchase_receipt_submit",
 	},
 	"Contact": {
-		"on_update": "one_fm.accommodation.doctype.accommodation.accommodation.accommodation_contact_update"
+		"on_update": "one_fm.doc_events.contact.accommodation_contact_update"
 	},
 	"Project": {
-		"validate": "one_fm.one_fm.project_custom.validate_poc_list",
-		"onload": "one_fm.one_fm.project_custom.get_depreciation_expense_amount"
+		"validate": "one_fm.doc_events.project.validate_poc_list",
+		"onload": "one_fm.doc_events.project.get_depreciation_expense_amount"
 	# 	"on_update": "one_fm.api.doc_events.project_on_update"
 	},
 	"Attendance": {
 		"on_submit": [
-			"one_fm.api.tasks.update_shift_details_in_attendance",
-			"one_fm.api.doc_events.create_additional_salary_for_overtime",
-			"one_fm.one_fm.utils.manage_attendance_on_holiday"
+			"one_fm.doc_events.attendance.update_shift_details_in_attendance",
+			# "one_fm.api.doc_events.create_additional_salary_for_overtime",
+			"one_fm.doc_events.attendance.manage_attendance_on_holiday"
 		],
-		"on_cancel": "one_fm.one_fm.utils.manage_attendance_on_holiday"
+		"on_cancel": "one_fm.doc_events.attendance.manage_attendance_on_holiday"
 	},
 	"Asset":{
-		"after_insert" : "one_fm.one_fm.asset_custom.after_insert_asset",
-		"on_submit": "one_fm.one_fm.asset_custom.on_asset_submit"
+		"after_insert" : "one_fm.doc_events.asset.after_insert_asset",
+		"on_submit": "one_fm.doc_events.asset.on_asset_submit"
 	},
 	"Sales Invoice":{
-		"before_submit": "one_fm.one_fm.sales_invoice_custom.before_submit_sales_invoice",
-		"validate": "one_fm.one_fm.sales_invoice_custom.set_print_settings_from_contracts"
+		"before_submit": "one_fm.doc_events.sales_invoice.before_submit_sales_invoice",
+		"validate": "one_fm.doc_events.sales_invoice.set_print_settings_from_contracts"
 	},
 	"Salary Slip": {
 		#"before_submit": "one_fm.api.doc_methods.salary_slip.salary_slip_before_submit",
-		"validate": "one_fm.one_fm.payroll_utils.set_justification_needed_on_deduction_in_salary_slip"
+		"validate": "one_fm.doc_events.salary_slip.set_justification_needed_on_deduction_in_salary_slip"
 	},
 	"Salary Structure Assignment": {
-		"before_save": "one_fm.api.doc_methods.salary_structure_assignment.fetch_salary_component",
+		"before_save": "one_fm.doc_events.salary_structure_assignment.fetch_salary_component",
 		"before_submit": [
-			"one_fm.api.doc_methods.salary_structure_assignment.calculate_indemnity_amount",
-			"one_fm.api.doc_methods.salary_structure_assignment.calculate_leave_allocation_amount",
+			"one_fm.doc_events.salary_structure_assignment.calculate_indemnity_amount",
+			"one_fm.doc_events.salary_structure_assignment.calculate_leave_allocation_amount",
 		]
 	},
 	"Training Event":{
-		"on_submit": "one_fm.api.doc_events.update_training_event_data"
+		"on_submit": "one_fm.doc_events.training_event.update_training_event_data"
 	},
 	"Training Result" :{
-		"on_submit": "one_fm.api.doc_events.update_certification_data"
+		"on_submit": "one_fm.doc_events.training_result.update_certification_data"
 	},
 	"Employee Incentive": {
-		"on_update": "one_fm.one_fm.payroll_utils.on_update_employee_incentive",
+		"on_update": "one_fm.doc_events.employee_incentive.on_update_employee_incentive",
 		"on_update_after_submit": "one_fm.one_fm.payroll_utils.on_update_after_submit_employee_incentive",
 	},
 	"Payroll Entry": {
-		"on_submit": "one_fm.api.doc_methods.payroll_entry.export_payroll",
+		"on_submit": "one_fm.doc_methods.payroll_entry.export_payroll",
 	},
 	"Expense Claim": {
-		"on_submit": "one_fm.api.doc_methods.expense_claim.on_submit",
+		"on_submit": "one_fm.doc_methods.expense_claim.on_submit",
 	},
 	# "Additional Salary" :{
 	# 	"on_submit": "one_fm.grd.utils.validate_date"
